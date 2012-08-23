@@ -4,7 +4,7 @@
  *  https://github.com/natalan/Promise
  */
 
-(function (global) {
+(function () {
     // states
     var ERROR = -1,
         PENDING = 0,
@@ -21,7 +21,7 @@
         }
     }
 
-    global.Promise = function () {
+    Promise = function () {
         var thens = [],
             build = function (obj) {
                 obj.status = function() { return status };
@@ -33,7 +33,7 @@
             _reject = functionValue(reject),
             _resolve = functionValue(resolve),
             _limited = functionValue(function(){
-                return build(Object.create(global.Promise.prototype, {
+                return build(Object.create(Promise.prototype, {
                     then: _then,
                     always: _always
                 }));
@@ -68,7 +68,7 @@
                 return this;
             }),
             builder = function (){
-                var obj = Object.create(global.Promise.prototype, {
+                var obj = Object.create(Promise.prototype, {
                     reject: _reject,
                     resolve: _resolve,
                     then: _then,
@@ -82,7 +82,7 @@
         return builder();
     };
 
-    global.Promise.prototype = {
+    Promise.prototype = {
         isResolved: function(){
             return this.status() === SUCCESS;
         },
@@ -95,4 +95,4 @@
             return this.status() === PENDING;
         }
     };
-})(window);
+})();
