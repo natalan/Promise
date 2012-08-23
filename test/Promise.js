@@ -1,10 +1,8 @@
-nokia.mh5.require("nokia.mh5.pulse.utils.Promise");
-
 (function() {
 
     var promise, success, failure, limited;
 
-    TestCase("nokia.mh5.pulse.utils.Promise", {
+    TestCase("Promise", {
         
         setUp: function() {
             promise = new Promise;
