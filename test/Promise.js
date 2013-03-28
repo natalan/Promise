@@ -248,6 +248,124 @@
             promise.success(success);
             var rejected = promise.reject();
             assertInstanceOf("Rejected promise is not instance of promise", Promise, rejected);
+        },
+
+        "test implementation with multiple promises, aka Master Promise": function() {
+            var promiseA = new Promise,
+                promiseB = new Promise;
+
+            var masterPromise = new Promise(promiseA, promiseB).then(success, failure);
+            // initial state and types
+            assertInstanceOf("masterPromise is not type of Promise", Promise, masterPromise);
+            assertFalse("masterPromise is Limited promise and doesn't have access to resolve function", "resolve" in masterPromise);
+            assertFalse("masterPromise is Limited promise and doesn't have access to reject function", "reject" in masterPromise);
+
+            assertTrue("Promise A still pending", promiseA.status() === 0);
+            assertTrue("Promise B still pending", promiseB.status() === 0);
+            assertTrue("masterPromise still pending", masterPromise.status() === 0);
+
+            // now resolve one of the promises without args
+            promiseA.resolve();
+            assertTrue("Promise A is resolved", promiseA.status() === 1);
+            assertTrue("Promise B still pending", promiseB.status() === 0);
+            assertTrue("masterPromise still pending", masterPromise.status() === 0);
+
+            // resolve another promise with some argument that we test later
+            promiseB.resolve({
+                "B": "testing"
+            });
+            assertTrue("Promise A is resolved", promiseA.status() === 1);
+            assertTrue("Promise B is resolved", promiseB.status() === 1);
+            assertTrue("masterPromise is resolved", masterPromise.status() === 1);
+            var successArray = new Array(2);
+            successArray[1] = {
+                "B": "testing"
+            };
+            assertTrue(success.calledWithExactly(successArray));
+            assertFalse(failure.called);
+
+        },
+
+        "test Master Promise should be rejected when one of its subordinates gets rejected": function() {
+            var promiseA = new Promise,
+                promiseB = new Promise;
+
+            var masterPromise = new Promise(promiseA, promiseB).then(success, failure);
+
+            // now reject one of the promises
+            promiseA.reject("rejected promise");
+            assertTrue("Promise A is rejected", promiseA.status() === -1);
+            assertTrue("Promise B still pending", promiseB.status() === 0);
+            assertTrue("masterPromise is rejected", masterPromise.status() === -1);
+            assertTrue(failure.calledWithExactly("rejected promise"));
+            assertFalse(success.called);
+
+        },
+
+        "test Master Promise with other nested promises": function() {
+            var promiseA = new Promise,
+                promiseB = new Promise,
+                promiseC = new Promise(promiseB);
+
+            var masterPromise = new Promise(promiseA, promiseC).success(success);
+
+            promiseB.resolve();
+            assertTrue(promiseA.status() === 0);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(masterPromise.status() === 0);
+
+            promiseA.resolve();
+            assertTrue(promiseA.status() === 1);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(masterPromise.status() === 1);
+        },
+
+        "test Master Promise with other nested promises - reject use case": function() {
+            var promiseA = new Promise,
+                promiseB = new Promise,
+                promiseC = new Promise,
+                promiseD = new Promise(promiseB, promiseC);
+
+            var masterPromise = new Promise(promiseA, promiseD);
+
+            promiseB.resolve();
+            assertTrue(promiseA.status() === 0);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(promiseC.status() === 0);
+            assertTrue(promiseD.status() === 0);
+            assertTrue(masterPromise.status() === 0);
+
+            promiseA.resolve();
+            assertTrue(promiseA.status() === 1);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(promiseC.status() === 0);
+            assertTrue(promiseD.status() === 0);
+            assertTrue(masterPromise.status() === 0);
+
+            promiseC.reject();
+            assertTrue(promiseA.status() === 1);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(promiseC.status() === -1);
+            assertTrue(promiseD.status() === -1);
+            assertTrue(masterPromise.status() === -1);
+        },
+
+        "test master promise with argument other than promise": function() {
+            var promiseA = new Promise,
+                promiseB = new Promise,
+                promiseC = new Promise(promiseB);
+
+            var masterPromise = new Promise(promiseA, promiseC).success(success);
+
+            promiseB.resolve();
+            assertTrue(promiseA.status() === 0);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(masterPromise.status() === 0);
+
+            promiseA.resolve();
+            assertTrue(promiseA.status() === 1);
+            assertTrue(promiseB.status() === 1);
+            assertTrue(masterPromise.status() === 1);
         }
     });
 })();

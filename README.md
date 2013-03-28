@@ -33,4 +33,18 @@ doSomething().then(function onResolve(result){
 });
 ```
 
+Nested Promises
+-----
+```javascript
+var promiseA = new Promise,
+    promiseB = new Promise,
+    nestedPromise = new Promise(promiseA, promiseB).success(function(value) {
+        alert(value.join(" "));
+    });
+
+promiseA.resolve("nestedPromise");
+promiseB.resolve("resolved"); /* alerts "nestedPromise resolved" */
+
+```
+
 Credits to [@solid_coder](https://twitter.com/unscriptable) and [@unscriptable](https://twitter.com/unscriptable)

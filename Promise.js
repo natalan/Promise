@@ -1,7 +1,10 @@
 /*jshint bitwise:true, curly:true, eqeqeq:true, forin:true, noarg:true, noempty:true, nonew:true, undef:true, strict:true, browser:true */
+
 /*!
  *  JavaScript Promise
- *  Released under the MIT license
+ *  @author Andrei Zharau & Sasha Malahov
+ *  @license Released under the MIT license
+ *
  *  https://github.com/natalan/Promise
  */
 
@@ -35,6 +38,7 @@
             itemValue,
             _reject = functionValue(reject),
             _resolve = functionValue(resolve),
+        // limited is a promise object that provides a separation of consumer and producer to protect promises from being fulfilled by untrusted code.
             _limited = functionValue(function(){
                 return build(Object.create(global.Promise.prototype, {
                     then: _then,
@@ -94,8 +98,39 @@
                 });
 
                 return build(obj);
-            };
-        return builder();
+            },
+            masterPromise = builder(),
+            args = arguments;
+
+        // nested Promise implementation
+        if (args.length) {
+            var subordinates = [].slice.call(args),
+                remaining = 0,
+                values = new Array(subordinates.length),
+                updateFunc = function(index, value) {
+                    return function(value) {
+                        values[index] = value;
+                        if (!( --remaining )) {
+                            masterPromise.resolve(values);
+                        }
+                    }
+                };
+
+            for (var i=0; i < subordinates.length; i++) {
+                if (subordinates[i] instanceof Promise) {
+                    remaining = remaining + 1;
+                    subordinates[i].then(updateFunc(i, value), function rejectMasterPromise(value) {
+                        // automatically reject masterPromise if any of subordinates failed
+                        masterPromise.reject(value);
+                    });
+                }
+            }
+
+            // return limited promise because master promise can be fulfilled only by its subordinates
+            return masterPromise.limited();
+        } else {
+            return masterPromise;
+        }
     };
 
     global.Promise.prototype = {
