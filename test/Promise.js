@@ -3,18 +3,18 @@
     var promise, success, failure, limited;
 
     TestCase("Promise", {
-        
+
         setUp: function() {
             promise = new Promise;
             limited = promise.limited();
             success = sinon.spy();
             failure = sinon.spy();
         },
-        
+
         tearDown: function() {
             promise = success = failure = limited = null;
         },
-        
+
         "test promise should be instance of Promise": function(){
             assertTrue(promise instanceof Promise);
             assertTrue(limited instanceof Promise)
@@ -177,12 +177,13 @@
         },
 
         "test always method handler will fire when promise rejected or resolved": function(){
-            promise.always(success);
-            promise.always(failure);
+            var p = promise.always(success).always(failure);
 
-            promise.resolve();
-            promise.always(success);
+            p.resolve();
 
+            p.always(success);
+
+            assertTrue(p instanceof Promise);
             assertTrue("Success handler called", success.calledTwice);
             assertTrue("Failure hasn't called", failure.calledOnce);
         },
@@ -197,7 +198,56 @@
             assertException(function(){
                 promise.reject();
             }, "Error");
-        }
+        },
 
+        "test success method": function() {
+            var p = promise.success(success);
+            promise.resolve("12345");
+            assertTrue(p instanceof Promise);
+            assertTrue("Success handler called", success.calledWithExactly("12345"));
+            assertFalse("Failure hasn't called", failure.called);
+        },
+
+        "test success method for limited": function() {
+            var p = limited.success(success);
+            promise.resolve("12345");
+            assertTrue(p instanceof Promise);
+            assertTrue("Success handler called", success.calledWithExactly("12345"));
+            assertFalse("Failure hasn't called", failure.called);
+        },
+
+        "test error method": function() {
+            var p = promise.error(failure);
+            promise.resolve("12345");
+            assertTrue(p instanceof Promise);
+            assertTrue("Error handler called", failure.calledWithExactly("12345"));
+            assertFalse("Success hasn't called", success.called);
+        },
+
+        "test error method for limited": function() {
+            var p = limited.error(failure);
+            promise.resolve("12345");
+            assertTrue("Error handler called", failure.calledWithExactly("12345"));
+            assertTrue(p instanceof Promise);
+            assertFalse("Success hasn't called", success.called);
+        },
+
+        "test chaining for success": function() {
+            promise.success(success).success(success);
+            promise.resolve();
+            assertTrue("Success handler called twice", success.calledTwice);
+        },
+
+        "test resolved promise has a type of promise": function() {
+            promise.success(success);
+            var resolved = promise.resolve();
+            assertInstanceOf("Resolved promise is not instance of promise", Promise, resolved);
+        },
+
+        "test rejected promise has a type of promise": function() {
+            promise.success(success);
+            var rejected = promise.reject();
+            assertInstanceOf("Rejected promise is not instance of promise", Promise, rejected);
+        }
     });
 })();

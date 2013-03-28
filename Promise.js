@@ -1,58 +1,66 @@
+/*jshint bitwise:true, curly:true, eqeqeq:true, forin:true, noarg:true, noempty:true, nonew:true, undef:true, strict:true, browser:true */
 /*!
  *  JavaScript Promise
  *  Released under the MIT license
  *  https://github.com/natalan/Promise
  */
 
-(function () {
+(function (global) {
+    "use strict";
     // states
     var ERROR = -1,
         PENDING = 0,
         SUCCESS = 1;
 
-    function resolve (val) { this.complete('resolve', val); };
-    function reject (ex) { this.complete('reject', ex); };
-    function functionValue (arg){
-        return {
-            writable: false,
-            configurable: false,
-            enumerable: true,
-            value: arg
-        }
-    }
+    var noop = function() {},
+        resolve = function (val) { return this.complete('resolve', val);},
+        reject = function (ex) { return this.complete('reject', ex);},
+        functionValue = function (arg){
+            return {
+                writable: false,
+                configurable: false,
+                enumerable: true,
+                value: arg
+            };
+        };
 
-    Promise = function () {
+    global.Promise = function () {
         var thens = [],
             build = function (obj) {
-                obj.status = function() { return status };
-                obj.value = function () { return itemValue };
+                obj.status = function() { return status; };
+                obj.value = function () { return itemValue; };
                 return obj;
             },
             status = PENDING,
-            itemValue = undefined,
+            itemValue,
             _reject = functionValue(reject),
             _resolve = functionValue(resolve),
             _limited = functionValue(function(){
-                return build(Object.create(Promise.prototype, {
+                return build(Object.create(global.Promise.prototype, {
                     then: _then,
-                    always: _always
+                    always: _always,
+                    success: _success,
+                    error: _error
                 }));
             }),
             _complete = functionValue(function (which, arg) {
                 var aThen, i = 0;
                 if (this.status() !== 0) {
                     throw new Error("Promise already completed. Status: " + this.status());
-                    return;
                 }
-                while (aThen = thens[i++]) { aThen[which] && aThen[which](arg); }
-                thens.splice(0,thens.length);
+
                 // change status of promise
                 status  =  (which === "resolve") ? SUCCESS : ERROR;
                 // change value of promise
                 itemValue = arg;
+
+                while (aThen = thens[i++]) { aThen[which] && aThen[which](arg); }
+                thens.splice(0,thens.length);
+
+                return this;
             }),
             _always = functionValue(function(arg){
-                this.then(arg, arg);
+                return this.then(arg, arg);
             }),
             _then = functionValue(function (onResolve, onReject) {
                 if (this.isResolved()) {
@@ -67,14 +75,22 @@
                 // returning back a promise for chaining purposes
                 return this;
             }),
+            _success = functionValue(function(arg){
+                return this.then(arg, noop);
+            }),
+            _error = functionValue(function(arg){
+                return this.then(arg, noop);
+            }),
             builder = function (){
-                var obj = Object.create(Promise.prototype, {
+                var obj = Object.create(global.Promise.prototype, {
                     reject: _reject,
                     resolve: _resolve,
                     then: _then,
                     always: _always,
                     complete: _complete,
-                    limited: _limited
+                    limited: _limited,
+                    success: _success,
+                    error: _error
                 });
 
                 return build(obj);
@@ -82,7 +98,7 @@
         return builder();
     };
 
-    Promise.prototype = {
+    global.Promise.prototype = {
         isResolved: function(){
             return this.status() === SUCCESS;
         },
@@ -95,4 +111,4 @@
             return this.status() === PENDING;
         }
     };
-})();
+})(this);
