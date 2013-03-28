@@ -13,7 +13,8 @@
     // states
     var ERROR = -1,
         PENDING = 0,
-        SUCCESS = 1;
+        SUCCESS = 1,
+        Create = Object.create;
 
     var noop = function() {},
         resolve = function (val) { return this.complete('resolve', val);},
@@ -40,7 +41,7 @@
             _resolve = functionValue(resolve),
         // limited is a promise object that provides a separation of consumer and producer to protect promises from being fulfilled by untrusted code.
             _limited = functionValue(function(){
-                return build(Object.create(global.Promise.prototype, {
+                return build(Create(global.Promise.prototype, {
                     then: _then,
                     always: _always,
                     success: _success,
@@ -86,7 +87,7 @@
                 return this.then(arg, noop);
             }),
             builder = function (){
-                var obj = Object.create(global.Promise.prototype, {
+                var obj = Create(global.Promise.prototype, {
                     reject: _reject,
                     resolve: _resolve,
                     then: _then,
