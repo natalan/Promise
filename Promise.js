@@ -108,19 +108,19 @@
             var subordinates = [].slice.call(args),
                 remaining = 0,
                 values = new Array(subordinates.length),
-                updateFunc = function(index, value) {
+                updateFunc = function(index) {
                     return function(value) {
                         values[index] = value;
                         if (!( --remaining )) {
                             masterPromise.resolve(values);
                         }
-                    }
+                    };
                 };
 
             for (var i=0; i < subordinates.length; i++) {
-                if (subordinates[i] instanceof Promise) {
+                if (subordinates[i] instanceof global.Promise) {
                     remaining = remaining + 1;
-                    subordinates[i].then(updateFunc(i, value), function rejectMasterPromise(value) {
+                    subordinates[i].then(updateFunc(i), function rejectMasterPromise(value) {
                         // automatically reject masterPromise if any of subordinates failed
                         masterPromise.reject(value);
                     });
