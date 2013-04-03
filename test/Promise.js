@@ -1,8 +1,10 @@
+nokia.mh5.require("nokia.mh5.pulse.utils.Promise");
+
 (function() {
 
     var promise, success, failure, limited;
 
-    TestCase("Promise", {
+    TestCase("nokia.mh5.pulse.utils.Promise", {
 
         setUp: function() {
             promise = new Promise;
@@ -20,10 +22,10 @@
             assertTrue(limited instanceof Promise)
         },
 
-        "test promise then method returns promise instance": function(){
+        "test promise then method returns another promise": function(){
             var t = promise.then(success);
             assertTrue("returned value is an instance of Promise", t instanceof Promise);
-            assertTrue("returned value is equal to promise", t === promise);
+            assertFalse("returned value is not equal to promise", t === promise);
 
         },
 
@@ -201,7 +203,7 @@
         },
 
         "test success method": function() {
-            var p = promise.success(success);
+            var p = promise.done(success);
             promise.resolve("12345");
             assertTrue(p instanceof Promise);
             assertTrue("Success handler called", success.calledWithExactly("12345"));
@@ -209,7 +211,7 @@
         },
 
         "test success method for limited": function() {
-            var p = limited.success(success);
+            var p = limited.done(success);
             promise.resolve("12345");
             assertTrue(p instanceof Promise);
             assertTrue("Success handler called", success.calledWithExactly("12345"));
@@ -217,35 +219,35 @@
         },
 
         "test error method": function() {
-            var p = promise.error(failure);
-            promise.resolve("12345");
+            var p = promise.fail(failure);
+            promise.reject("12345");
             assertTrue(p instanceof Promise);
             assertTrue("Error handler called", failure.calledWithExactly("12345"));
             assertFalse("Success hasn't called", success.called);
         },
 
         "test error method for limited": function() {
-            var p = limited.error(failure);
-            promise.resolve("12345");
+            var p = limited.fail(failure);
+            promise.reject("12345");
             assertTrue("Error handler called", failure.calledWithExactly("12345"));
             assertTrue(p instanceof Promise);
             assertFalse("Success hasn't called", success.called);
         },
 
         "test chaining for success": function() {
-            promise.success(success).success(success);
+            promise.done(success).done(success);
             promise.resolve();
             assertTrue("Success handler called twice", success.calledTwice);
         },
 
         "test resolved promise has a type of promise": function() {
-            promise.success(success);
+            promise.done(success);
             var resolved = promise.resolve();
             assertInstanceOf("Resolved promise is not instance of promise", Promise, resolved);
         },
 
         "test rejected promise has a type of promise": function() {
-            promise.success(success);
+            promise.done(success);
             var rejected = promise.reject();
             assertInstanceOf("Rejected promise is not instance of promise", Promise, rejected);
         },
@@ -257,8 +259,6 @@
             var masterPromise = new Promise(promiseA, promiseB).then(success, failure);
             // initial state and types
             assertInstanceOf("masterPromise is not type of Promise", Promise, masterPromise);
-            assertFalse("masterPromise is Limited promise and doesn't have access to resolve function", "resolve" in masterPromise);
-            assertFalse("masterPromise is Limited promise and doesn't have access to reject function", "reject" in masterPromise);
 
             assertTrue("Promise A still pending", promiseA.status() === 0);
             assertTrue("Promise B still pending", promiseB.status() === 0);
@@ -307,7 +307,7 @@
                 promiseB = new Promise,
                 promiseC = new Promise(promiseB);
 
-            var masterPromise = new Promise(promiseA, promiseC).success(success);
+            var masterPromise = new Promise(promiseA, promiseC).done(success);
 
             promiseB.resolve();
             assertTrue(promiseA.status() === 0);
@@ -355,7 +355,7 @@
                 promiseB = new Promise,
                 promiseC = new Promise(promiseB);
 
-            var masterPromise = new Promise(promiseA, promiseC).success(success);
+            var masterPromise = new Promise(promiseA, promiseC).done(success);
 
             promiseB.resolve();
             assertTrue(promiseA.status() === 0);
@@ -366,6 +366,50 @@
             assertTrue(promiseA.status() === 1);
             assertTrue(promiseB.status() === 1);
             assertTrue(masterPromise.status() === 1);
+        },
+
+        "test multiple thens - done": function() {
+            expectAsserts(3);
+
+            var callback1 = sinon.spy(),
+                callback2 = sinon.spy();
+
+            promise.then(function(value) {
+                callback1();
+                assertEquals("Value is 5", value, 5);
+                return value * 2;
+            }).then(function(value) {
+                    callback2();
+                    assertEquals("Value is 10", value, 10);
+                });
+
+            promise.resolve(5);
+            assertTrue("callback order execution", callback1.calledBefore(callback2));
+        },
+
+        "test multiple thens - fail": function() {
+            expectAsserts(3);
+
+            var callback1 = sinon.spy(),
+                callback2 = sinon.spy();
+
+            promise.then(function(value) {}, function(value) {
+                callback1();
+                assertEquals("Value is 5", value, 5);
+                return value * 2;
+            }).then(function() {}, function(value) {
+                    callback2();
+                    assertEquals("Value is 10", value, 10);
+                });
+
+            promise.reject(5);
+            assertTrue("callback order execution", callback1.calledBefore(callback2));
+        },
+
+        "test back compatibility support": function() {
+            assertTrue(promise.done === promise.success);
+            assertTrue(promise.fail === promise.error);
         }
+
     });
 })();

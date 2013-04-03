@@ -44,8 +44,10 @@
                 return build(Create(global.Promise.prototype, {
                     then: _then,
                     always: _always,
-                    success: _success,
-                    error: _error
+                    success: _done, // deprecate soon
+                    error: _fail, // deprecate soon
+                    done: _done,
+                    fail: _fail
                 }));
             }),
             _complete = functionValue(function (which, arg) {
@@ -65,26 +67,45 @@
                 return this;
             }),
             _always = functionValue(function(arg){
-                return this.then(arg, arg);
-            }),
-            _then = functionValue(function (onResolve, onReject) {
-                if (this.isResolved()) {
-                    onResolve(this.value());
-                }
-                else if (this.isRejected()) {
-                    onReject(this.value());
-                }
-                else if (this.isPending()) {
-                    thens.push({ resolve: onResolve, reject: onReject });
-                }
-                // returning back a promise for chaining purposes
+                this.then(arg, arg);
                 return this;
             }),
-            _success = functionValue(function(arg){
-                return this.then(arg, noop);
+            _then = functionValue(function (onResolve, onReject) {
+                if (typeof onResolve !== "function") {
+                    throw new Error("Success argument is required!");
+                }
+
+                // onReject is optional here
+                onReject = (onReject == null) ? noop : onReject;
+
+                //create a new promise
+                var newPromise = new Promise;
+
+                // check if promise already completed
+                if (this.isResolved()) {
+                    onResolve(this.value());
+                } else if (this.isRejected()) {
+                    onReject(this.value());
+                } else if (this.isPending()) {
+                    thens.push({
+                        "resolve": function(val) {
+                            newPromise.resolve( onResolve(val) );
+                        },
+                        "reject": function(val) {
+                            newPromise.reject( onReject(val) );
+                        }
+                    });
+                }
+
+                return newPromise;
             }),
-            _error = functionValue(function(arg){
-                return this.then(arg, noop);
+            _done = functionValue(function(arg){
+                this.then(arg, noop);
+                return this;
+            }),
+            _fail = functionValue(function(arg){
+                this.then(noop, arg);
+                return this;
             }),
             builder = function (){
                 var obj = Create(global.Promise.prototype, {
@@ -94,8 +115,10 @@
                     always: _always,
                     complete: _complete,
                     limited: _limited,
-                    success: _success,
-                    error: _error
+                    success: _done, // deprecate soon
+                    error: _fail, // deprecate soon
+                    done: _done,
+                    fail: _fail
                 });
 
                 return build(obj);
@@ -126,12 +149,9 @@
                     });
                 }
             }
-
-            // return limited promise because master promise can be fulfilled only by its subordinates
-            return masterPromise.limited();
-        } else {
-            return masterPromise;
         }
+
+        return masterPromise;
     };
 
     global.Promise.prototype = {
