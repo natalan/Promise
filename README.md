@@ -84,4 +84,4 @@ Filtered Promises chain
 
 ```
 
-Credits to [@solid_coder](https://twitter.com/unscriptable) and [@unscriptable](https://twitter.com/unscriptable)
+Credits to [@solid_coder](https://twitter.com/solid_coder) and [@unscriptable](https://twitter.com/unscriptable)
