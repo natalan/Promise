@@ -47,4 +47,41 @@ promiseB.resolve("resolved"); /* alerts "nestedPromise resolved" */
 
 ```
 
+Filtered Promises chain
+-----
+```javascript
+    var promise = new Promise();
+
+    var asyncFunction_1 = function(arg) {
+        var p = new Promise;
+
+        setTimeout(function() {
+            p.resolve(arg + 1);
+        }, 1000);
+
+        // return promise to continue the chain
+        return p;
+    };
+
+    var asyncFunction_2 = function(arg) {
+        var p = new Promise;
+
+        setTimeout(function() {
+            p.resolve(arg + 2);
+        }, 1000);
+
+        return p;
+    };
+
+    var syncFunction = function(arg) {
+        alert(arg + 3);
+    };
+
+    // chain async and sync functions
+    promise.then(asyncFunction_1).then(asyncFunction_2).then(syncFunction);
+
+    promise.resolve(1); /* two seconds later alerts "7" */
+
+```
+
 Credits to [@solid_coder](https://twitter.com/unscriptable) and [@unscriptable](https://twitter.com/unscriptable)
