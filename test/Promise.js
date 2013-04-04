@@ -406,9 +406,99 @@ nokia.mh5.require("nokia.mh5.pulse.utils.Promise");
             assertTrue("callback order execution", callback1.calledBefore(callback2));
         },
 
-        "test back compatibility support": function() {
-            assertTrue(promise.done === promise.success);
-            assertTrue(promise.fail === promise.error);
+        "test back compatibility support for success": function() {
+            promise.success(success);
+            promise.resolve();
+            assertTrue(success.called);
+        },
+
+        "test multiple thens with async functions": function() {
+            var clock = sinon.useFakeTimers(),
+                spy1 = sinon.spy(),
+                spy2 = sinon.spy(),
+                spy3 = sinon.spy();
+
+            var asyncFunction_1 = function(arg) {
+                var p = new Promise;
+                spy1(arg); //call the spy
+                setTimeout(function() {
+                    p.resolve(arg + 1);
+                }, 1000);
+
+                return p;
+            };
+
+            var asyncFunction_2 = function(arg) {
+                var p = new Promise;
+                spy2(arg);
+                setTimeout(function() {
+                    p.resolve(arg + 2);
+                }, 1000);
+
+                return p;
+            };
+
+            var syncFunction = function(arg) {
+                spy3(arg);
+                return (arg + 3);
+            };
+
+            var result = promise.then(asyncFunction_1).then(asyncFunction_2).then(syncFunction);
+
+            assertInstanceOf("result is a Promise", Promise, result);
+            promise.resolve(1);
+
+            assertTrue("Spy1 was called with an arg", spy1.calledWithExactly(1));
+
+            clock.tick(1001);
+            assertTrue("Spy2 called", spy2.calledWithExactly(2));
+            assertFalse("Spy3 wasn't called", spy3.called);
+
+            clock.tick(1001);
+            assertTrue("Spy3 called", spy3.calledWithExactly(4));
+
+            assertEquals("result of a promise is 7", 7, result.value());
+
+            clock.restore();
+        },
+
+        "test multiple thens with failure scenario": function() {
+            var clock = sinon.useFakeTimers();
+
+            var asyncFunction_1 = function(arg) {
+                var p = new Promise;
+
+                setTimeout(function() {
+                    p.reject(arg + 1);
+                }, 1000);
+
+                return p;
+            };
+
+            var asyncFunction_2 = function(arg) {
+                var p = new Promise;
+                setTimeout(function() {
+                    p.resolve(arg + 2);
+                }, 1000);
+
+                return p;
+            };
+
+            var syncFunction = function(arg) {
+                return (arg + 3);
+            };
+
+
+            var result = promise.then(asyncFunction_1).then(syncFunction, asyncFunction_2).then(syncFunction);
+
+            promise.resolve(1);
+
+            clock.tick(1001);
+            clock.tick(1001);
+
+            assertEquals("result of a promise is 6", 7, result.value());
+
+            clock.restore();
         }
 
     });

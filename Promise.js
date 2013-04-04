@@ -44,8 +44,6 @@
                 return build(Create(global.Promise.prototype, {
                     then: _then,
                     always: _always,
-                    success: _done, // deprecate soon
-                    error: _fail, // deprecate soon
                     done: _done,
                     fail: _fail
                 }));
@@ -79,7 +77,7 @@
                 onReject = (onReject == null) ? noop : onReject;
 
                 //create a new promise
-                var newPromise = new Promise;
+                var newPromise = new global.Promise();
 
                 // check if promise already completed
                 if (this.isResolved()) {
@@ -89,10 +87,28 @@
                 } else if (this.isPending()) {
                     thens.push({
                         "resolve": function(val) {
-                            newPromise.resolve( onResolve(val) );
+                            var returned = onResolve(val);
+                            if (returned instanceof global.Promise) {
+                                returned.then(function(val) {
+                                    newPromise.resolve(val);
+                                }, function(val) {
+                                    newPromise.reject(val);
+                                });
+                            } else {
+                                newPromise.resolve(returned);
+                            }
                         },
                         "reject": function(val) {
-                            newPromise.reject( onReject(val) );
+                            var returned = onReject(val);
+                            if (returned instanceof global.Promise) {
+                                returned.then(function(val) {
+                                    newPromise.resolve(val);
+                                }, function(val) {
+                                    newPromise.reject(val);
+                                });
+                            } else {
+                                newPromise.reject(returned);
+                            }
                         }
                     });
                 }
@@ -115,8 +131,6 @@
                     always: _always,
                     complete: _complete,
                     limited: _limited,
-                    success: _done, // deprecate soon
-                    error: _fail, // deprecate soon
                     done: _done,
                     fail: _fail
                 });
@@ -150,6 +164,8 @@
                 }
             }
         }
+        // preventing memory leaks by nullifying args, so it can go to gc
+        args = null;
 
         return masterPromise;
     };
@@ -165,6 +181,14 @@
 
         isPending: function(){
             return this.status() === PENDING;
+        },
+
+        /* these methods will be deprecated */
+        success: function() {
+            return this.done.apply(this, arguments);
+        },
+        error: function() {
+            return this.fail.apply(this, arguments);
         }
     };
 })(this);
