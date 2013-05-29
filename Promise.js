@@ -7,14 +7,16 @@
  *
  *  https://github.com/natalan/Promise
  */
-
 (function (global) {
     "use strict";
     // states
     var ERROR = -1,
         PENDING = 0,
         SUCCESS = 1,
-        Create = Object.create;
+        Create = Object.create,
+        isArray = Array.isArray || function(obj) {
+            return toString.call(obj) == '[object Array]';
+        };
 
     var noop = function() {},
         resolve = function (val) { return this.complete('resolve', val);},
@@ -65,8 +67,7 @@
                 return this;
             }),
             _always = functionValue(function(arg){
-                this.then(arg, arg);
-                return this;
+                return this.then(arg, arg);
             }),
             _then = functionValue(function (onResolve, onReject) {
                 if (typeof onResolve !== "function") {
@@ -77,13 +78,13 @@
                 onReject = (onReject == null) ? noop : onReject;
 
                 //create a new promise
-                var newPromise = new global.Promise();
+                var newPromise = new global.Promise;
 
                 // check if promise already completed
                 if (this.isResolved()) {
-                    onResolve(this.value());
+                    newPromise.resolve( onResolve(this.value()) );
                 } else if (this.isRejected()) {
-                    onReject(this.value());
+                    newPromise.reject( onReject(this.value()) );
                 } else if (this.isPending()) {
                     thens.push({
                         "resolve": function(val) {
@@ -142,8 +143,8 @@
 
         // nested Promise implementation
         if (args.length) {
-            var subordinates = [].slice.call(args),
-                remaining = 0,
+            var subordinates =[].slice.call(isArray(args[0]) ? args[0] : args),
+                remaining = subordinates.length,
                 values = new Array(subordinates.length),
                 updateFunc = function(index) {
                     return function(value) {
@@ -156,11 +157,12 @@
 
             for (var i=0; i < subordinates.length; i++) {
                 if (subordinates[i] instanceof global.Promise) {
-                    remaining = remaining + 1;
                     subordinates[i].then(updateFunc(i), function rejectMasterPromise(value) {
                         // automatically reject masterPromise if any of subordinates failed
-                        masterPromise.reject(value);
+                        (masterPromise.status() === PENDING) && masterPromise.reject(value);
                     });
+                } else {
+                    updateFunc(i)(subordinates[i]);
                 }
             }
         }
@@ -191,4 +193,13 @@
             return this.fail.apply(this, arguments);
         }
     };
+
+    if (typeof exports !== 'undefined') {
+        if (typeof module !== 'undefined' && module.exports) {
+            exports = module.exports = global.Promise;
+        }
+        exports.Promise = global.Promise;
+    }
+
+
 })(this);
