@@ -1,3 +1,8 @@
 # for projects that use Waf for building: http://code.google.com/p/waf/
 .waf-*
 .lock-*
+/.idea/
+/.idea/scopes/
+/node_modules/
+*.xml
+*.iml
