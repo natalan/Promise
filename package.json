@@ -1,0 +1,36 @@
+{
+    "name": "nok-promise",
+    "version": "1.0.0",
+    "description": "Lightweight JavaScript Promise",
+    "main": "Promise.js",
+    "author": {
+        "name": "Andrei Zharau",
+        "email": "belmass@gmail.com",
+        "url": "http://www.o2v.net/"
+    },
+    "keywords": [
+        "promise",
+        "deferred",
+        "asynchronous"
+    ],
+    "repository" : {
+        "type" : "git",
+        "url" : "https://github.com/natalan/Promise.git"
+    },
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "http://www.opensource.org/licenses/MIT"
+        }
+    ],
+    "contributors": [
+        {
+            "name": "Andrei Zharau",
+            "email": "belmass@gmail.com",
+            "url": "http://www.o2v.net/"
+        },
+        {
+            "name": "Sasha Malahov"
+        }
+    ]
+}
