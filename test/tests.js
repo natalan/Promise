@@ -274,7 +274,7 @@ test("test implementation with multiple promises, aka Master Promise", function(
 
     var masterPromise = new Promise(promiseA, promiseB).then(success, failure);
     // initial state and types
-    assertInstanceOf("masterPromise is not type of Promise", Promise, masterPromise);
+    assertInstanceOf("masterPromise is type of Promise", Promise, masterPromise);
 
     assertTrue("Promise A still pending", promiseA.status() === 0);
     assertTrue("Promise B still pending", promiseB.status() === 0);
@@ -309,7 +309,7 @@ test("test Master Promise with an Array of promises as an argument", function() 
     var masterPromise = new Promise([promiseA, promiseB]).then(success, failure);
 
     // initial state and types
-    assertInstanceOf("masterPromise is not type of Promise", Promise, masterPromise);
+    assertInstanceOf("masterPromise is type of Promise", Promise, masterPromise);
 
     assertTrue("Promise A still pending", promiseA.status() === 0);
     assertTrue("Promise B still pending", promiseB.status() === 0);
@@ -602,4 +602,32 @@ test("another scenario with multiple promises", function() {
     equal(c.value(), 1, "Expected that second promise will change the value");
 
     clock.restore();
+});
+
+test("master Promise with functions as arguments", function() {
+    var _promiseA = new Promise,
+        _promiseB = new Promise,
+        promiseA = function() {
+            return _promiseA;
+        },
+        promiseB = function() {
+            return _promiseB;
+        };
+
+    var masterPromise = new Promise(promiseA, promiseB).then(success, failure);
+
+    _promiseA.resolve();
+    assertTrue("masterPromise still pending", masterPromise.status() === 0);
+
+    // resolve another promise with some argument that we test later
+    _promiseB.resolve({
+        "B": "testing"
+    });
+
+    var successArray = new Array(2);
+    successArray[1] = {
+        "B": "testing"
+    };
+    assertTrue(success.calledWithExactly(successArray));
+    assertFalse(failure.called);
 });

@@ -161,6 +161,11 @@
             };
 
             for (var i=0; i < subordinates.length; i++) {
+                if (typeof subordinates[i] === "function") {
+                    // execute the function and assign the value to subordinate item
+                    subordinates[i] = subordinates[i]();
+                }
+
                 if (subordinates[i] instanceof global.Promise) {
                     subordinates[i].then(updateFunc(i), _rejectMasterPromise);
                 } else {

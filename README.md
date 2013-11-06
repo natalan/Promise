@@ -47,6 +47,26 @@ promiseB.resolve("resolved"); /* alerts "nestedPromise resolved" */
 
 ```
 
+Nested Promises with Functions as arguments
+-----
+```javascript
+var _promiseA = new Promise,
+    _promiseB = new Promise,
+    functionThatReturnsPromiseA = function() {
+        return _promiseA;
+    },
+    functionThatReturnsPromiseB = function() {
+        return _promiseB;
+    },
+    nestedPromise = new Promise(functionThatReturnsPromiseA, functionThatReturnsPromiseB).success(function(value) {
+        alert(value.join(" "));
+    });
+
+_promiseA.resolve("nestedPromise");
+_promiseB.resolve("resolved"); /* alerts "nestedPromise resolved" */
+
+```
+
 Filtered Promises chain
 -----
 ```javascript
