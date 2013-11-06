@@ -155,12 +155,14 @@
                     };
                 };
 
+            var _rejectMasterPromise = function rejectMasterPromise(value) {
+                // automatically reject masterPromise if any of subordinates failed
+                (masterPromise.status() === PENDING) && masterPromise.reject(value);
+            };
+
             for (var i=0; i < subordinates.length; i++) {
                 if (subordinates[i] instanceof global.Promise) {
-                    subordinates[i].then(updateFunc(i), function rejectMasterPromise(value) {
-                        // automatically reject masterPromise if any of subordinates failed
-                        (masterPromise.status() === PENDING) && masterPromise.reject(value);
-                    });
+                    subordinates[i].then(updateFunc(i), _rejectMasterPromise);
                 } else {
                     updateFunc(i)(subordinates[i]);
                 }
