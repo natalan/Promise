@@ -1,4 +1,5 @@
 /*jshint bitwise:true, curly:true, eqeqeq:true, forin:true, noarg:true, noempty:true, nonew:true, undef:true, strict:true, browser:true */
+/* global console, exports, module, global, toString */
 
 /*!
  *  JavaScript Promise
@@ -15,7 +16,7 @@
         SUCCESS = 1,
         Create = Object.create,
         isArray = Array.isArray || function(obj) {
-            return toString.call(obj) == '[object Array]';
+            return toString.call(obj) === '[object Array]';
         };
 
     var noop = function() {},
@@ -53,11 +54,11 @@
             _complete = functionValue(function (which, arg) {
                 var aThen, i = 0;
                 if (this.status() !== 0) {
-                    throw new Error("Promise already completed. Status: " + this.status());
+                    throw new Error('Promise already completed. Status: ' + this.status());
                 }
 
                 // change status of promise
-                status  =  (which === "resolve") ? SUCCESS : ERROR;
+                status  =  (which === 'resolve') ? SUCCESS : ERROR;
                 // change value of promise
                 itemValue = arg;
 
@@ -70,8 +71,8 @@
                 return this.then(arg, arg);
             }),
             _then = functionValue(function (onResolve, onReject) {
-                if (typeof onResolve !== "function") {
-                    throw new Error("Success argument is required!");
+                if (typeof onResolve !== 'function') {
+                    throw new Error('Success argument is required!');
                 }
 
                 // onReject is optional here
@@ -87,7 +88,7 @@
                     newPromise.reject( onReject(this.value()) );
                 } else if (this.isPending()) {
                     thens.push({
-                        "resolve": function(val) {
+                        'resolve': function(val) {
                             var returned = onResolve(val);
                             if (returned instanceof global.Promise) {
                                 returned.then(function(val) {
@@ -99,7 +100,7 @@
                                 newPromise.resolve(returned);
                             }
                         },
-                        "reject": function(val) {
+                        'reject': function(val) {
                             var returned = onReject(val);
                             if (returned instanceof global.Promise) {
                                 returned.then(function(val) {
@@ -161,7 +162,7 @@
             };
 
             for (var i=0; i < subordinates.length; i++) {
-                if (typeof subordinates[i] === "function") {
+                if (typeof subordinates[i] === 'function') {
                     // execute the function and assign the value to subordinate item
                     subordinates[i] = subordinates[i]();
                 }
@@ -194,9 +195,11 @@
 
         /* these methods will be deprecated */
         success: function() {
+            console.warn('Success method will be deprecated. Use .done() instead.');
             return this.done.apply(this, arguments);
         },
         error: function() {
+            console.warn('Error method will be deprecated. Use .done() instead.');
             return this.fail.apply(this, arguments);
         }
     };
